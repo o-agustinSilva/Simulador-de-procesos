@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Simulador</title>
+</head>
+<body>
+    <div id="file-uploader" class="file-uploader">
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <label for="fileInput">Archivo:</label>
+            <input type="file" accept=".txt" name="fileInput" id="fileInput">
+        </form>
+    </div>
+
+    <div class="politica-planificacion">
+        <form>
+            <label for="politica">Politica de planificación:</label>
+            <select name="politica" id="politica">
+                <option value="FCFS">FCFS (First Come First Served)</option>
+                <option value="Prioridad">Prioridad Externa</option>
+                <option value="RoundRobin">Round-Robin</option>
+                <option value="SPN">SPN (Shortest Process Next)</option>
+                <option value="SRTN">SRTN (Shortest Remaining Time Next)</option>
+            </select>
+        </form>
+    </div>
+
+    <div class="tiempos-utilizados">
+        <fieldset>
+            <!-- Seleccionar tiempos del SO -->
+            <legend>Seleccionar los tiempos del SO (en milisegundos)</legend>
+
+            <input type="number" min="0" placeholder="0" id = "tip"/>
+            <span>Tiempo que utiliza el sistema operativo para aceptar los nuevos procesos (TIP)</span><br>
+           
+            <input type="number" min="0" placeholder="0" id = "tfp"/>
+            <span>Tiempo que utiliza el sistema operativo para terminar los procesos (TFP)</span><br>
+            
+            <input type="number" min="0" placeholder="0" id = "tcp"/>
+            <span>Tiempo de conmutación entre procesos (TCP)</span><br>
+            
+            <input type="number" min="0" placeholder="0" id = "q"/>
+            <span>Quantum (si fuera necesario)</span><br>
+        </fieldset>
+    </div>
+
+    <div class="boton-calcular">
+        <input id="boton-calcular" type="button" value="Simular proceso" onclick="simularProceso()">
+    </div>
+
+    <div class="indicadores">
+
+        <table id="datos-procesos">
+            <caption>Procesos</caption>
+              <tr>
+                  <th>Nombre del proceso</th>
+                  <th>Cantidad ráfagas CPU</th>
+                  <th>Duración ráfagas CPU</th>
+                  <th>Duración ráfagas I/O</th>
+                  <th>Arrival time</th>
+                  <th>Prioridad (1 más alta)</th>
+              </tr>
+              <tr>
+
+              </tr>
+          </table>
+
+        <!-- Mostrar indicadores resultado del procesamiento del archivo -->
+        <table id="indicadores-proceso">
+          <caption>Indicadores de Proceso</caption>
+            <tr>
+                <th>ID Proceso</th>
+                <th>Tiempo de Retorno</th>
+                <th>Tiempo de Retorno Normalizado</th>
+                <th>Tiempo en Estado de Listo</th>
+            </tr>
+            <tr>
+                <td>Tantas filas como sea necesario</td>
+                <td>Tantas filas como sea necesario</td>
+                <td>Tantas filas como sea necesario</td>
+                <td>Tantas filas como sea necesario</td>
+            </tr>
+        </table>
+        <br>
+
+        <table id="indicadores-tanda">
+            <caption>Indicadores de tanda de procesos</caption>
+            <tr>
+                <th>Tiempo de Retorno</th>
+                <th>Tiempo Medio de Retorno</th>
+            </tr>
+            <tr>
+                <td>En función del procesamiento</td>
+                <td>En función del procesamiento</td>
+            </tr>
+        </table>
+        <br>
+
+
+        <table id="indicadores-cpu">
+            <caption>Uso de la CPU</caption>
+            <tr>
+                <th rowspan="2">Tiempo de CPU Desocupada</th>
+                <th rowspan="2">CPU utilizada por el SO</th>
+                <th colspan="2">Cpu utilizada por los procesos
+                </th>
+            </tr>
+            <tr>
+                <th>Absoluto</th>
+                <th>%</th>
+            </tr>
+            <tr>
+                <td>En función del procesamiento</td>
+                <td>En función del procesamiento</td>
+                <td>En función del procesamiento</td>
+                <td>En función del procesamiento</td>
+            </tr>
+        </table>
+        <br>
+      </div>
+
+    <!-- Descargar archivo procesado de acuerdo a los requerimientos de la cátedra -->
+    <div class="boton-descargar">
+        <button id="boton-descargar">Descargar resultados</button>
+    </div>
+</body>
+
+<!-- Import de JQuery -->
+<script
+    src="https://code.jquery.com/jquery-3.7.1.slim.js"
+    integrity="sha256-UgvvN8vBkgO0luPSUl2s8TIlOSYRoGFAX4jlCIm9Adc="
+    crossorigin="anonymous">
+</script>
+
+<script>
+var cantProcesos = 0;
+var matrizProcesos = [];
+
+var colaNuevos = [];
+var colaListos = [];
+var colaCorriendo = []; // Siempre habrá 1 sólo proceso
+var colaBloqueados = [];
+var colaTerminados = [];
+
+/* Detección de file input, su procesado y eventual carga a la tabla de procesos*/
+const cargarTabla = (fr) => {
+    let procesos = fr.result;
+
+    lineas = procesos.split('\n'); //Divido en salto de lineas
+    let tabla = document.getElementById('datos-procesos');
+
+    cantProcesos = lineas.length;
+
+    //Agrego los valores a la tabla
+    for (let i = 0; i < lineas.length; i++) {
+        let valores = lineas[i].split(' '); // DividE la línea en valores
+        
+        if (valores.length === 6) {         // Verifica que haya 5 valores en cada línea
+            let fila = tabla.insertRow();   // Crea una nueva fila
+            let proceso = []; //Para ir agregando procesos y agregarlos a la matriz
+            for (let j = 0; j < valores.length; j++) {
+
+                //Agrego a la tabla
+                let celda = fila.insertCell();  // Crea una nueva celda
+                celda.textContent = valores[j]; // Asigna el valor a la celda
+
+                //Agrego al array
+                proceso.push(valores[j]); // Agrega el valor directamente
+            }
+
+            matrizProcesos.push(proceso);
+        }
+    }
+}
+
+document.getElementById("fileInput").addEventListener("change", function(event) {
+    event.preventDefault();
+    var fr = new FileReader();
+    fr.onload = function() {
+        cargarTabla(fr);
+    }
+
+    fr.readAsText(this.files[0]);
+
+})
+
+
+/* Ejecuta en función de la planificación */
+function simularProceso() {
+
+    let tip = $("#tip").val();
+    let tcp = $("#tcp").val(); // Tiempo de Conmutación entre Procesos (TCP) + Lo ingresa el usuario
+    let tfp = $("#tfp").val(); // Tiempo de Finalización de Proceso (TFP) + Lo ingresa el usuario
+    let quantum = $("#q").val();
+
+    let planificacion = $("#politica").val();
+
+    switch (planificacion) {
+        case "FCFS": 
+            simularFCFS(tip, tcp, tfp);
+            break;
+        case "Prioridad": 
+            break;
+        case "RoundRobin": 
+            break;
+        case "SPN": 
+            break;
+        case "SRTN": 
+            break;
+    }
+}
+
+const ejecutarTiemposSO = (t, tiempo) => {
+    delay(t);
+    tiempo = tiempo + t; //Incremento el tiempo que estuve esperando
+}
+
+const getIndex = (matrix, valueToSearch) => {
+    let i = 0;
+
+    while (i < matrix.length && matrix[i][4] != valueToSearch) {
+        i++;
+    }
+
+    if (i == matrix.length) return -1
+    else return i;
+}
+
+//Ordeno por tiempo de arribo 
+const sortMatrix = (a,b) => {
+    if (a[4] === b[4])
+        return 0;
+    else 
+        return (a[4] < b[4]) ? -1 : 1;
+} 
+
+const simularFCFS = (tip, tcp, tfp) => {
+    let tiempo = 0;
+    let tandaProcesosFin = false;
+
+    matrizProcesos.sort(sortMatrix);
+
+    let tiempoDeArribo = [];
+    for (let i = 0; i < matrizProcesos.length; i++) {
+        tiempoDeArribo.push(matrizProcesos[i][4]);
+    }
+
+    //Cargo la lista de nuevos
+    for (let i = 0; i < matrizProcesos.length; i++) {
+        colaNuevos.push(matrizProcesos[i]);
+    }
+
+    while (!(colaTerminados.length == matrizProcesos.length)) {
+
+        //Acepto los procesos y pasas a la cola de listos
+        if (colaListos.length == 0 && colaBloqueados.length == 0) { 
+            for (let i = 0; i < colaNuevos.length; i++) {
+                colaListos.push(colaNuevos[i]);
+            }
+        }
+        else
+            if (colaBloqueados.length > 0)
+                colaListos.push(colaBloqueados.shift());
+        
+        //Corre el primer proceso y lo saca de la cola de listos
+        if (colaListos.length > 0){
+            colaCorriendo.push(colaListos.shift());
+            //tiempo += (colaListos.length == 1? colaCorriendo[2] : colaCorriendo[0][2]);
+            tiempo += parseInt(colaCorriendo[0][2]);
+            alert("el tiempo es: " + tiempo);
+            colaCorriendo[0][1] -= 1;
+        }
+        
+        //Si no hay más repeticiones para el proceso, lo agrego a la cola de terminados
+        if (colaCorriendo[0][1] == 0) {
+            colaTerminados.push(colaCorriendo.shift());
+            alert("Se terminó de ejecutar el proceso " + colaTerminados[colaTerminados.length-1][0]);
+        }
+        else
+            colaBloqueados.push(colaCorriendo.shift());
+
+    }
+
+    alert(tiempo);
+}
+</script>
+</html>

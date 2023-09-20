@@ -1,0 +1,61 @@
+*{
+    top: 0;
+    padding: 5px;
+    color: #FAFAFA;
+    font-size: 24px;
+    
+}
+
+body{
+    background-color: #242323;
+}
+
+div{
+    margin-top: 25px;
+}
+
+th, td{
+    border-collapse: collapse;
+    border: 1px solid #FAFAFA;
+}
+
+table {
+    width: 100%;
+    text-align: center;
+}
+
+/* --------------- Divs  ------------------*/
+/* File uploader del archivo */
+.file-uploader{
+    border: 1px solid #FAFAFA;
+}
+
+/* Dropdown de politica de planificación*/
+.politica-planificacion{
+    border: 1px solid #FAFAFA;
+}
+
+.politica-planificacion #politica{
+    color:#242323;
+}
+.politica-planificacion #politica option{
+    color:#242323;
+}
+
+
+/* --------------- Botones e inputs ------------------*/
+/* Inputs de tiempos*/
+.tiempos-utilizados input{
+    margin-top: 20px;
+    color: #242323;
+}
+
+/* Botón para calcular */
+.boton-calcular #boton-calcular{
+    color: #242323;
+}
+
+/* Botón para descargar */
+.boton-descargar #boton-descargar{
+    color: #242323;
+}
