@@ -1,39 +1,62 @@
 var cantProcesos = 0;
 var matrizProcesos = [];
+var procesos = [];
 
 var colaNuevos = [];
 var colaListos = [];
 var colaCorriendo = []; // Siempre habrá 1 sólo proceso
 var colaBloqueados = [];
 var colaTerminados = [];
+var colaAux = [];
+
+/***********************
+**Definición de clases**
+***********************/
+class Proceso {
+    constructor(nombre, cantidadR, duracionR, inputR, arrivalTime, prioridad) {
+        this.nombre         = nombre;
+        this.cantidadR      = cantidadR;
+        this.duracionR      = duracionR;
+        this.inputR         = inputR;
+        this.arrivalTime    = arrivalTime;
+        this.prioridad      = prioridad;
+        
+
+        //Atributos adicionales
+        this.tiempoEjecucionAux = duracionR;
+        this.arrivalTimeReal    = arrivalTime;
+        this.iteracionES        = inputR;
+        this.tiempoInicio       = null;
+        this.tiempoFinalizacion = null;
+    }
+}
 
 /* Detección de file input, su procesado y eventual carga a la tabla de procesos*/
 const cargarTabla = (fr) => {
-    let procesos = fr.result;
+    let p = fr.result;
 
-    lineas = procesos.split('\n'); //Divido en salto de lineas
+    lineas    = p.split('\n'); //Divido en salto de lineas
     let tabla = document.getElementById('datos-procesos');
 
     cantProcesos = lineas.length;
 
     //Agrego los valores a la tabla
     for (let i = 0; i < lineas.length; i++) {
-        let valores = lineas[i].split(' '); // DividE la línea en valores
+        let valores = lineas[i].split(' '); // Divide la línea en valores
         
         if (valores.length === 6) {         // Verifica que haya 5 valores en cada línea
             let fila = tabla.insertRow();   // Crea una nueva fila
-            let proceso = []; //Para ir agregando procesos y agregarlos a la matriz
-            for (let j = 0; j < valores.length; j++) {
 
+            //Creo el objeto y lo meto en el array de procesos
+            const proceso = new Proceso(valores[0], parseInt(valores[1]), parseInt(valores[2]), parseInt(valores[3]), parseInt(valores[4]), parseInt(valores[5]));
+            procesos.push(proceso);
+
+            //Agrego el proceso a la tabla HTML
+            for (let j = 0; j < valores.length; j++) {
                 //Agrego a la tabla
                 let celda = fila.insertCell();  // Crea una nueva celda
                 celda.textContent = valores[j]; // Asigna el valor a la celda
-
-                //Agrego al array
-                proceso.push(valores[j]); // Agrega el valor directamente
             }
-
-            matrizProcesos.push(proceso);
         }
     }
 }
@@ -49,10 +72,8 @@ document.getElementById("fileInput").addEventListener("change", function(event) 
 
 })
 
-
 /* Ejecuta en función de la planificación */
 function simularProceso() {
-
     let tip = $("#tip").val();
     let tcp = $("#tcp").val(); // Tiempo de Conmutación entre Procesos (TCP) + Lo ingresa el usuario
     let tfp = $("#tfp").val(); // Tiempo de Finalización de Proceso (TFP) + Lo ingresa el usuario
@@ -75,76 +96,117 @@ function simularProceso() {
     }
 }
 
-const ejecutarTiemposSO = (t, tiempo) => {
-    delay(t);
-    tiempo = tiempo + t; //Incremento el tiempo que estuve esperando
+
+// Elimina todos los elementos del array usando splice
+const clearArray = (a) => {
+    a.splice(0, a.length);
 }
 
-const getIndex = (matrix, valueToSearch) => {
-    let i = 0;
-
-    while (i < matrix.length && matrix[i][4] != valueToSearch) {
-        i++;
-    }
-
-    if (i == matrix.length) return -1
-    else return i;
-}
-
-//Ordeno por tiempo de arribo 
-const sortMatrix = (a,b) => {
-    if (a[4] === b[4])
-        return 0;
-    else 
-        return (a[4] < b[4]) ? -1 : 1;
-} 
-
-const simularFCFS = (tip, tcp, tfp) => {
-    let tiempo = 0;
-    let tandaProcesosFin = false;
-
-    matrizProcesos.sort(sortMatrix);
-
-    let tiempoDeArribo = [];
-    for (let i = 0; i < matrizProcesos.length; i++) {
-        tiempoDeArribo.push(matrizProcesos[i][4]);
-    }
-
-    //Cargo la lista de nuevos
-    for (let i = 0; i < matrizProcesos.length; i++) {
-        colaNuevos.push(matrizProcesos[i]);
-    }
-
-    while (!(colaTerminados.length == matrizProcesos.length)) {
-
-        //Acepto los procesos y pasas a la cola de listos
-        if (colaListos.length == 0 && colaBloqueados.length == 0) { 
-            for (let i = 0; i < colaNuevos.length; i++) {
-                colaListos.push(colaNuevos[i]);
-            }
+//Borra todo los objetos de la cola A que estén en la cola B (Aux)
+const deleteFromArray = (a, aux) => {
+    for (const p of aux) {
+        const index = a.indexOf(p);
+        if (index !== -1) {
+            a.splice(index, 1);
         }
-        else
-            if (colaBloqueados.length > 0)
-                colaListos.push(colaBloqueados.shift());
-        
-        //Corre el primer proceso y lo saca de la cola de listos
-        if (colaListos.length > 0){
+    }
+}
+
+//Pasa elementos de un array, a otro array y a su vez a un array aux.
+const transferTo = () => {}
+
+const newHandler = (tiempo) => {
+
+    for (const p of procesos) {
+        if (p.arrivalTimeReal == tiempo) {
+            colaNuevos.push(p);
+            colaAux.push(p);
+        }
+    }
+
+    deleteFromArray(procesos, colaAux)
+    clearArray(colaAux);
+}
+
+const toReady = (tiempo) => { 
+    for (const p of colaNuevos)
+        if (p.arrivalTimeReal + 1 == tiempo) {
+            colaListos.push(p);
+            colaAux.push(p);
+        }
+    
+    deleteFromArray(colaNuevos, colaAux);
+    clearArray(colaAux);
+}
+
+const runningHandler = (tiempo) => {
+
+    if (colaCorriendo.length == 0) 
+        if (colaListos.length != 0) {
             colaCorriendo.push(colaListos.shift());
-            //tiempo += (colaListos.length == 1? colaCorriendo[2] : colaCorriendo[0][2]);
-            tiempo += parseInt(colaCorriendo[0][2]);
-            alert("el tiempo es: " + tiempo);
-            colaCorriendo[0][1] -= 1;
+            console.log("El proceso " + colaCorriendo[0].nombre + " entró a ejecutarse en el tiempo " + tiempo);
         }
-        
-        //Si no hay más repeticiones para el proceso, lo agrego a la cola de terminados
-        if (colaCorriendo[0][1] == 0) {
-            colaTerminados.push(colaCorriendo.shift());
-            alert("Se terminó de ejecutar el proceso " + colaTerminados[colaTerminados.length-1][0]);
-        }
-        else
-            colaBloqueados.push(colaCorriendo.shift());
+
+    //Resto uno a la ejecución
+    if (colaCorriendo.length == 1) colaCorriendo[0].tiempoEjecucionAux--;
+}
+
+const checkRunningProcess = (tiempo) => {
+    if (colaCorriendo[0].tiempoEjecucionAux === 0){ 
+        colaCorriendo[0].cantidadR--;
+        console.log("El proceso " + colaCorriendo[0].nombre + " se bloquéo en el tiempo " + tiempo);
+        colaCorriendo[0].iteracionES--;
+        colaBloqueados.push(colaCorriendo.shift());
+    }
+}
+
+const checkBlockedProcess = (tiempo) => {
+//let colaAux2 = [];
+    for (const p of colaBloqueados) {
+        if (p.iteracionES === 0) {
+            if (p.cantidadR === 0) {
+                colaTerminados.push(p);
+                colaAux.push(p);
+                console.log("El proceso " + p.nombre + " finalizó en el tiempo " + tiempo);
+            }
+            else { //Desbloqueo el proceso
+                colaListos.push(p); 
+                colaAux.push(p);
+                console.log("El proceso " + p.nombre + " se desbloqueó en el tiempo " + tiempo);
+                p.tiempoEjecucionAux = p.duracionR;
+                p.iteracionES = p.inputR;
+            }
+        } else 
+            p.iteracionES--;
+    }
+
+    if (colaAux.length > 0) {
+        deleteFromArray(colaBloqueados, colaAux);
+        clearArray(colaAux);
+    }
+}
+
+const simularFCFS = (tip) => {
+    let tiempo = 0;
+    let cantidadProcesos = procesos.length;
+
+    //Ordeno los procesos por tiempo de llegada
+    procesos.sort((a, b) => a.arrivalTime - b.arrivalTime);
+
+    //Lleno los atributos de los procesos que va a servir para más adelante
+    for (const p of procesos) {
+        p.arrivalTimeReal = parseInt(p.arrivalTime) + parseInt(tip);
 
     }
 
-    alert(tiempo);
+    while (tiempo <= 15) {
+        if (colaCorriendo.length > 0) checkRunningProcess(tiempo);
+        if (colaBloqueados.length > 0) checkBlockedProcess(tiempo);
+
+        newHandler(tiempo);
+        if (colaNuevos.length > 0) toReady(tiempo);
+        runningHandler(tiempo);
+    
+        tiempo++;
+    }
 }
