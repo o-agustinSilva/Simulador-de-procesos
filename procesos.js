@@ -53,7 +53,6 @@ const resetVariables = () => {
     q = 0;
     cpuDesocupada = 0;
     cpuOcupadaPorSO = 0; //Se puede calcular fuera de la simulación
-    output = "";
 
     enlaceDescarga; // Declarar la variable fuera de la función
     mensajesConcatenados = ''; // Variable para mantener un registro de los mensajes
@@ -154,6 +153,7 @@ const generarOutput = (mensaje) => {
 
 /* Ejecuta en función de la planificación */
 function simularProceso() {
+    output = "";
     let tip = $("#tip").val();
     let tcp = $("#tcp").val(); // Tiempo de Conmutación entre Procesos (TCP) + Lo ingresa el usuario
     let tfp = $("#tfp").val(); // Tiempo de Finalización de Proceso (TFP) + Lo ingresa el usuario
