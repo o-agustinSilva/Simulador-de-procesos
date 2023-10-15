@@ -70,11 +70,26 @@ const cargarTabla = (fr) => {
     }
 }
 
+const borrarFilasTablaExistente = (id) => {
+    const tabla = document.getElementById(id);
+    procesos.splice(0, procesos.length);
+    if (tabla) {
+        while (tabla.rows.length > 1) { // Deja la primera fila intacta
+            tabla.deleteRow(1); // Borra la segunda fila en adelante
+        }
+    }
+}
+
+
 document.getElementById("fileInput").addEventListener("change", function(event) {
     event.preventDefault();
     var fr = new FileReader();
     fr.onload = function() {
-        cargarTabla(fr);
+        borrarFilasTablaExistente('datos-procesos'); // Llama a la función para borrar la tabla si existe
+        borrarFilasTablaExistente('indicadores-proceso'); // Llama a la función para borrar la tabla si existe
+        borrarFilasTablaExistente('indicadores-tanda'); // Llama a la función para borrar la tabla si existe
+        borrarFilasTablaExistente('indicadores-cpu'); // Llama a la función para borrar la tabla si existe
+        cargarTabla(fr); // Llama a la función para cargar la nueva tabla
     }
 
     fr.readAsText(this.files[0]);
@@ -137,9 +152,7 @@ function simularProceso() {
     }
     alert("Se ejecutó la tanda de procesos correctamente.");
     agregarActionListener();
-
 }
-
 
 // Elimina todos los elementos del array usando splice
 const clearArray = (a) => {
