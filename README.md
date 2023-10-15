@@ -25,5 +25,4 @@ Instrucciones para su uso:
 # IMPORTANTE
 
 - Al cargar una tanda de procesos y simular la ejecución de la misma, NO volver a apretar el botón de 'simular proceso' ya que se rompe
-- Está contemplado que al cargar una nueva tanda se reinicie todos los elementos HTML y arrays utilizados, pero para mayor seguridad se recomienda reiniciar la página al ejecutar una nueva tanda
-  ![image](https://github.com/o-agustinSilva/Simulador-de-procesos/assets/130515944/3dbfb7fc-d60b-463e-93f9-83b5cb8db898)
+- Está contemplado que al cargar una nueva tanda se reinicie todos los elementos HTML y arrays utilizados, pero para mayor seguridad se recomienda reiniciar la página (F5) al ejecutar una nueva tanda
