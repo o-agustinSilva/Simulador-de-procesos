@@ -40,6 +40,25 @@ class Proceso {
     }
 }
 
+const resetVariables = () => {
+    cantProcesos = 0;
+
+    colaNuevos = [];
+    colaListos = [];
+    colaCorriendo = []; // Siempre habrá 1 sólo proceso
+    colaBloqueados = [];
+    colaTerminados = [];
+    colaAux = [];
+    contador = 0; //Tcp que se resetea y decrece
+    q = 0;
+    cpuDesocupada = 0;
+    cpuOcupadaPorSO = 0; //Se puede calcular fuera de la simulación
+    output = "";
+
+    enlaceDescarga; // Declarar la variable fuera de la función
+    mensajesConcatenados = ''; // Variable para mantener un registro de los mensajes
+}
+
 /* Detección de file input, su procesado y eventual carga a la tabla de procesos*/
 const cargarTabla = (fr) => {
     let p = fr.result;
@@ -70,9 +89,18 @@ const cargarTabla = (fr) => {
     }
 }
 
+const borrarFilasTablaCPU = (id) => {
+    const tabla = document.getElementById(id);
+    if (tabla) {
+        const filas = tabla.rows.length;
+        if (filas > 2) {
+            tabla.deleteRow(2); // Borra la segunda fila
+        }
+    }
+}
+
 const borrarFilasTablaExistente = (id) => {
     const tabla = document.getElementById(id);
-    procesos.splice(0, procesos.length);
     if (tabla) {
         while (tabla.rows.length > 1) { // Deja la primera fila intacta
             tabla.deleteRow(1); // Borra la segunda fila en adelante
@@ -88,7 +116,7 @@ document.getElementById("fileInput").addEventListener("change", function(event) 
         borrarFilasTablaExistente('datos-procesos'); // Llama a la función para borrar la tabla si existe
         borrarFilasTablaExistente('indicadores-proceso'); // Llama a la función para borrar la tabla si existe
         borrarFilasTablaExistente('indicadores-tanda'); // Llama a la función para borrar la tabla si existe
-        borrarFilasTablaExistente('indicadores-cpu'); // Llama a la función para borrar la tabla si existe
+        borrarFilasTablaCPU('indicadores-cpu'); // Llama a la función para borrar la tabla si existe
         cargarTabla(fr); // Llama a la función para cargar la nueva tabla
     }
 
@@ -152,6 +180,7 @@ function simularProceso() {
     }
     alert("Se ejecutó la tanda de procesos correctamente.");
     agregarActionListener();
+    resetVariables();
 }
 
 // Elimina todos los elementos del array usando splice
